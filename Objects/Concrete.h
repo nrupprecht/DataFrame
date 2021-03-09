@@ -6,6 +6,8 @@
 #define DATAFRAME_CONCRETE_H
 
 #include "Column.h"
+#include "DataFrame.h"
+
 
 template<typename T>
 class DataFrame::Concrete {
@@ -68,14 +70,18 @@ public:
     //  Friend classes.
     // ========================================
 
+    friend class DataFrame;
     friend class DataFrame::Column;
 private:
     typedef DataFrame::Column::ConcreteWrapper<T> WrapperType;
 
     explicit Concrete(std::shared_ptr<WrapperType> wrapper) : wrapper_(std::move(wrapper)) {}
 
+    void push_back(const T& value) {
+        wrapper_->data_.push_back(value);
+    }
+
     std::shared_ptr<WrapperType> wrapper_;
 };
-
 
 #endif //DATAFRAME_CONCRETE_H

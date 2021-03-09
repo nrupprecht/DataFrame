@@ -64,3 +64,7 @@ DType Column::GetDType() const {
 void Column::ToStream(std::size_t index, std::ostream& out) const {
     box_->wrapper_->ToStream(index, out);
 }
+
+bool Column::Append(const Column& col) {
+    return box_->wrapper_->Append(col.box_->wrapper_);
+}

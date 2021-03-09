@@ -9,6 +9,8 @@
 #include "TypeConversion.h"
 #include "Column.h"
 
+#include <iostream>
+
 
 bool DataFrame::HasColumn(const std::string& name) {
     return GetColumn(name) != data_.end();
@@ -50,21 +52,50 @@ bool DataFrame::Empty() const {
 }
 
 void DataFrame::Append(const DataFrame& df) {
+    // Check that the dataframes have the same columns, or that the columns
+    // of this DataFrame are a subset of those of df.
+    if (df.NumCols() < NumCols()) {
+        return;
+    }
+    std::vector<StorageType::const_iterator> iters;
+    for (const auto& col : data_) {
+        auto& name = col.first;
+        auto it = df.GetColumn(name);
+        if (!col.second.SameTypeAs(it->second)) {
+            std::cout << "Types do not match for column " << col.first << ". DTypes are " \
+                << col.second.GetDType() << " and " << it->second.GetDType() << "\n";
+            return;
+        }
+        if (it == df.data_.end()) {
+            std::cout << "Did not find column " << col.first << " in DF.\n";
+            return;
+        }
+        iters.push_back(it);
+    }
 
+    // If we make it here, all columns matched.
+    std::size_t index = 0;
+    for (auto& col : data_) {
+        auto& column = col.second;
+        if (!column.Append(iters[index]->second)) {
+            throw std::exception();
+        }
+        ++index;
+    }
 }
 
 // ========================================
 //  Reading and writing.
 // ========================================
 
-DataFrame DataFrame::from_stream(std::istream& instream) {
+DataFrame DataFrame::FromStream(std::istream& in) {
     // First, look for columns.
     int numUnnamedColumns = 0;
 
     std::vector<std::string> colNames;
     std::string data;
     {
-        getline(instream, data);
+        getline(in, data);
         std::istringstream stream(data);
         while (getline(stream, data, ',')) {
             if (data.empty()) {
@@ -87,7 +118,7 @@ DataFrame DataFrame::from_stream(std::istream& instream) {
 
     // Get lines as long as possible.
     int numRows = 0;
-    while (getline(instream, data)) {
+    while (getline(in, data)) {
 
         std::istringstream stream(data);
 
@@ -126,17 +157,17 @@ DataFrame DataFrame::from_stream(std::istream& instream) {
     return DataFrame(std::move(internal));
 }
 
-DataFrame DataFrame::read_csv(const std::string& filename) {
+DataFrame DataFrame::ReadCSV(const std::string& filename) {
     std::ifstream fin(filename);
     if (fin.fail()) {
         return DataFrame();
     }
-    auto df = from_stream(fin);
+    auto df = FromStream(fin);
     fin.close();
     return df;
 }
 
-bool DataFrame::to_stream(std::ostream& out) {
+bool DataFrame::ToStream(std::ostream& out) {
     std::size_t i = 0;
     // Print column names.
     for (const auto& pr : data_) {
@@ -163,12 +194,12 @@ bool DataFrame::to_stream(std::ostream& out) {
     return true;
 }
 
-bool DataFrame::to_csv(const std::string& filename) {
+bool DataFrame::ToCSV(const std::string& filename) {
     std::ofstream fout(filename);
     if (fout.fail()) {
         return false;
     }
-    bool status = to_stream(fout);
+    bool status = ToStream(fout);
     fout.close();
     return status;
 }
@@ -179,5 +210,10 @@ bool DataFrame::to_csv(const std::string& filename) {
 
 DataFrame::StorageType::iterator DataFrame::GetColumn(const std::string& name) {
     return std::find_if(data_.begin(), data_.end(),
-                        [&](auto pr) { return pr.first == name; });
+                        [&](const auto& pr) { return pr.first == name; });
+}
+
+DataFrame::StorageType::const_iterator DataFrame::GetColumn(const std::string& name) const {
+    return std::find_if(data_.cbegin(), data_.cend(),
+                        [&](const auto& pr) { return pr.first == name; });
 }

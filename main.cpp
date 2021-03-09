@@ -48,18 +48,29 @@ int main() {
     }
     std::cout << "\n";
 
-    df.to_csv("../Test.csv");
+    df.ToCSV("../Test.csv");
 
-    df.to_stream(std::cout);
+    df.ToStream(std::cout);
 
-    auto df_in = DataFrame::read_csv("../Data.csv");
+    auto df_in = DataFrame::ReadCSV("../Data.csv");
     std::cout << "\n\nRead dataframe from file:\n---\n";
-    df_in.to_stream(std::cout);
-    std::cout << "\n---\n";
-    std::cout << "Num Rows: " << df_in.NumRows() << "\n";
+    df_in.ToStream(std::cout);
+    std::cout << "---\n";
 
-    std::cout << "\nTesting Type Details:\n";
-    std::cout << TypeDetails<std::vector<std::pair<const volatile int* const* const, float const>>>().description << "\n";
-    std::cout << TypeDetails<decltype(&f)>().description << "\n";
+    // Test appending a DataFrame to another DataFrame.
+    DataFrame df2;
+    df2["Basic"] = std::vector<std::string> { "punky", "bean" };
+    df2["Boolean"] = std::vector<bool> { true, true };
+    df2.Append(df);
+    df2.ToStream(std::cout);
+
+    // Test appending some data to a DataFrame.
+    std::cout << "\nCan we add to df2? ";
+    std::cout << std::boolalpha << df2.Append("another", false) << "!\nResult:\n";
+    df2.ToStream(std::cout);
+
+    // std::cout << "\nTesting Type Details:\n";
+    // std::cout << TypeDetails<std::vector<std::pair<const volatile int* const* const, float const>>>().description << "\n";
+    // std::cout << TypeDetails<decltype(&f)>().description << "\n";
     return 0;
 }

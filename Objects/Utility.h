@@ -65,10 +65,39 @@ namespace util {
         //using type = typename ::type;
     };
 
-
-
     template<typename T>
     using remove_cvref_t = typename remove_cvref<T>::type;
+
+    // ========================================
+    //  Logic
+    // ========================================
+
+    template<typename ...Args>
+    inline bool And(bool head, Args... args) {
+        return head && And(args...);
+    }
+
+    template<>
+    inline bool And(bool head) {
+        return head;
+    }
+
+    template<typename ...Args>
+    inline bool Or(bool head, Args... args) {
+        return head || And(args...);
+    }
+
+    template<>
+    inline bool Or(bool head) {
+        return head;
+    }
+
+    // ========================================
+    //  Template convenience.
+    // ========================================
+
+    template<typename ...Args>
+    inline void Null(Args...) {};
 
 }
 #endif // __UTILITY_H__

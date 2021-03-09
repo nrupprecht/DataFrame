@@ -37,6 +37,40 @@ struct EmptyDType {
 };
 
 // ========================================
+//  Stream operator.
+// ========================================
+
+inline std::ostream& operator<<(std::ostream& out, DType dtype) {
+    switch(dtype) {
+        case DType::None:
+            out << "DType::None";
+            break;
+        case DType::Other:
+            out << "DType::Other";
+            break;
+        case DType::Empty:
+            out << "DType::Empty";
+            break;
+        case DType::Integer:
+            out << "DType::Integer";
+            break;
+        case DType::Float:
+            out << "DType::Float";
+            break;
+        case DType::Double:
+            out << "DType::Double";
+            break;
+        case DType::Bool:
+            out << "DType::Bool";
+            break;
+        case DType::String:
+            out << "DType::String";
+            break;
+    }
+    return out;
+}
+
+// ========================================
 //  Define conversions from types to dtypes.
 // ========================================
 
@@ -133,6 +167,21 @@ namespace {
     struct StorageTypeHelper<bool> {
         using type = char;
     };
+
+    template<std::size_t N>
+    struct StorageTypeHelper<char [N]> {
+        using type = std::string;
+    };
+
+    template<typename T>
+    struct ConvenienceTypeHelper {
+        using type = T;
+    };
+
+    template<std::size_t N>
+    struct ConvenienceTypeHelper<char [N]> {
+        using type = std::string;
+    };
 }
 
 //! \brief Defines the storage type associated with a concrete column type. This headache is necessary
@@ -145,6 +194,25 @@ struct StorageType : public StorageTypeHelper<util::remove_cvref_t<T>> {};
 template <typename T>
 using StorageType_t = typename StorageType<T>::type;
 
+//! \brief Related concept to storage type. Any sort of char [N], we want to store as a std::string, but we want
+//! the type of the concrete wrapper to be std::string as well. This is different than the case for storing bools,
+//! where the storage type is char, but we use a ConcreteWrapper<bool>, and take/return bools.
+template<typename T>
+struct ConvenienceType : public ConvenienceTypeHelper<util::remove_cvref_t<T>> {};
+
+template<typename T>
+using ConvenienceType_t = typename ConvenienceType<T>::type;
+
+template<typename T>
+struct Trial {
+    const static int x = 1;
+};
+
+template<std::size_t N>
+struct Trial<char [N]> {
+    const static int x = 2;
+    using type = std::string;
+};
 
 // ========================================
 //  Check for NaNs.

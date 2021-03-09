@@ -2,7 +2,10 @@
 // Created by Nathaniel Rupprecht on 3/7/21.
 //
 
-#ifndef DATAFRAME_DATAFRAME_H
-#define DATAFRAME_DATAFRAME_H
+#ifndef __DATA_FRAME_CONSOLIDATION_H__
+#define __DATA_FRAME_CONSOLIDATION_H__
 
-#endif //DATAFRAME_DATAFRAME_H
+#include "Objects/Column.h"
+#include "Objects/Concrete.h"
+
+#endif //__DATA_FRAME_CONSOLIDATION_H__

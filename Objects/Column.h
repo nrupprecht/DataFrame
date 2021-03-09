@@ -58,6 +58,10 @@ public:
     //! \brief Check if another column has the same underlying type as this column.
     bool SameTypeAs(const Column& rhs) const;
 
+    //! \brief Check if the column has a specific underlying type.
+    template<typename T>
+    bool IsType() const;
+
     //! \brief Check if a concrete column is a reference to the same underlying data.
     template<typename T>
     bool IsRefOf(const Concrete<T>& rhs) const;
@@ -130,6 +134,10 @@ private:
         }
     }
 
+    //! \brief Append another column onto this one. This function is private so only
+    //! a DataFrame can use it.
+    bool Append(const Column& col);
+
     //! \brief A base class for child classes with concrete storage type.
     struct Wrapper {
         //! \brief Returns the size of the data held by the wrapper.
@@ -157,6 +165,9 @@ private:
 
         //! \brief Add data to the wrapper via its string representation.
         virtual void AddByString(const std::string& value) = 0;
+
+        //! \brief Append the contents of another
+        virtual bool Append(const std::shared_ptr<Wrapper>& wrapper) = 0;
 
         // ========================================
         //  Comparisons.
@@ -235,6 +246,15 @@ private:
 
         void AddByString(const std::string& value) override {
             data_.push_back(ToType<value_type>(value));
+        }
+
+        bool Append(const std::shared_ptr<Wrapper>& wrapper) override {
+            auto c_ptr = std::dynamic_pointer_cast<ConcreteWrapper<T>>(wrapper);
+            if (c_ptr) {
+                data_.insert(data_.end(), c_ptr->data_.begin(), c_ptr->data_.end());
+                return true;
+            }
+            return false;
         }
 
         // ========================================
@@ -575,6 +595,11 @@ DataFrame::Column& DataFrame::Column::operator=(const std::list<T>& rhs) {
 template<typename T>
 bool DataFrame::Column::IsRefOf(const DataFrame::Concrete<T>& rhs) const{
     return box_->wrapper_ == rhs.wrapper_;
+}
+
+template<typename T>
+bool DataFrame::Column::IsType() const {
+    return std::dynamic_pointer_cast<ConcreteWrapper<T>>(box_->wrapper_) != nullptr;
 }
 
 template<typename T>
