@@ -25,8 +25,7 @@ namespace util {
     };
 
     template<typename T>
-    struct is_ostreamable : public is_streamable<std::ostream, T> {
-    };
+    struct is_ostreamable : public is_streamable<std::ostream, T> {};
 
     // ========================================
     //  Concatenate strings into one string.
@@ -46,8 +45,9 @@ namespace util {
     //  Reinterpret cast.
     // ========================================
 
-    //! \brief Reinterpret cast a shared pointer. For some inexplicable reason, my compiler doesn't
+    //! \brief Reinterpret cast a shared pointer. For some reason, my compiler doesn't
     //! recognize std::reinterpret_pointer_cast, which is obviously what should generally be used.
+    //! Apparently, clang is missing some features: https://github.com/conda-forge/libcxx-feedstock/issues/44.
     template<class T, class U>
     inline std::shared_ptr<T> reinterpret_pointer_cast(const std::shared_ptr<U> &r) noexcept {
         auto p = reinterpret_cast<typename std::shared_ptr<T>::element_type *>(r.get());

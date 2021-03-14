@@ -2,15 +2,18 @@
 // Created by Nathaniel Rupprecht on 2/27/21.
 //
 
-#include "DataFrame.h"
+#include "../include/DataFrame.h"
 // Other files
 #include <fstream>
 #include <sstream>
-#include "TypeConversion.h"
-#include "Column.h"
+#include "../include/TypeConversion.h"
+#include "../include/templates/Column.h"
 
 #include <iostream>
+#include <utility>
 
+
+DataFrame::DataFrame() : index_map_(std::make_shared<std::vector<std::size_t>>()) {}
 
 bool DataFrame::HasColumn(const std::string& name) {
     return GetColumn(name) != data_.end();
@@ -19,26 +22,30 @@ bool DataFrame::HasColumn(const std::string& name) {
 //! \brief Returns a vector of all the column names.
 std::vector<std::string> DataFrame::Columns() const {
     std::vector<std::string> output;
-    std::for_each(data_.begin(), data_.end(), [&](auto pr) { output.push_back(pr.first); });
+    std::for_each(data_.begin(), data_.end(),
+                  [&](auto pr) { output.push_back(pr.first); });
     return output;
 }
 
-DataFrame::Column& DataFrame::operator[](const std::string& name) {
-    auto it = GetColumn(name);
-    if (it == data_.end()) {
-        data_.emplace_back(name, Column(DType::None, NumRows()));
-        return data_.back().second;
-    }
-    else {
-        return it->second;
-    }
+std::vector<DType> DataFrame::DTypes() const {
+    std::vector<DType> output;
+    std::for_each(data_.begin(), data_.end(),
+                  [&](auto pr) { output.push_back(pr.second.GetDType()); });
+    return output;
 }
 
 std::size_t DataFrame::NumRows() const {
     if (Empty()) {
         return 0;
+    } else {
+        return index_map_->size();
     }
-    else {
+}
+
+std::size_t DataFrame::NumRowsFull() const {
+    if (Empty()) {
+        return 0;
+    } else {
         return data_.front().second.Size();
     }
 }
@@ -50,6 +57,52 @@ std::size_t DataFrame::NumCols() const {
 bool DataFrame::Empty() const {
     return data_.empty();
 }
+
+// ========================================
+//  Selection
+// ========================================
+
+DataFrame::Column& DataFrame::operator[](const std::string& name) {
+    auto it = GetColumn(name);
+    if (it == data_.end()) {
+        data_.emplace_back(name, Column(DType::None, index_map_, NumRows()));
+        return data_.back().second;
+    }
+    else {
+        return it->second;
+    }
+}
+
+DataFrame DataFrame::operator[](const Indicator& indicator) const {
+    if (indicator.size() != NumRows()) {
+        return DataFrame();
+    }
+    auto df = Ref();
+
+    auto index_map = std::make_shared<std::vector<std::size_t>>();
+    for (std::size_t i = 0; i < indicator.size(); ++i) {
+        bool ind = indicator[i];
+        if (ind) {
+            index_map->push_back((*index_map_)[i]);
+        }
+    }
+    df.UpdateIndexMap(index_map);
+    return df;
+}
+
+DataFrame DataFrame::Ref() const {
+    return *this;
+}
+
+DataFrame DataFrame::Clone() const {
+    auto df = DataFrame();
+    // \TODO: Actual cloning part.
+    return df;
+}
+
+// ========================================
+//  Merging and appending.
+// ========================================
 
 void DataFrame::Append(const DataFrame& df) {
     // Check that the dataframes have the same columns, or that the columns
@@ -73,15 +126,90 @@ void DataFrame::Append(const DataFrame& df) {
         iters.push_back(it);
     }
 
+    // Record what the next index in index_map_ needs to be.
+    std::size_t next_index = NumRowsFull();
+
     // If we make it here, all columns matched.
     std::size_t index = 0;
     for (auto& col : data_) {
         auto& column = col.second;
         if (!column.Append(iters[index]->second)) {
-            throw std::exception();
+            throw std::exception(); // \TODO: Handle failure?
         }
         ++index;
     }
+
+    // Update the index map.
+    for (std::size_t i = 0; i < df.NumRows(); ++i) {
+        index_map_->push_back(next_index + i);
+    }
+}
+
+// ========================================
+//  Rearranging, renaming, etc.
+// ========================================
+
+bool DataFrame::Rename(const std::string& initial, const std::string& final) {
+    if (HasColumn(final)) {
+        return false;
+    }
+    auto it = GetColumn(initial);
+    if (it != data_.end()) {
+        it->first = final;
+        return true;
+    }
+    return false;
+}
+
+std::size_t DataFrame::Rename(const std::map<std::string, std::string>& renaming) {
+    std::size_t count = 0;
+    for (const auto& pr : renaming) {
+        if (Rename(pr.first, pr.second)) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+bool DataFrame::DropColumn(const std::string& name) {
+    auto it = GetColumn(name);
+    if (it != data_.end()) {
+        data_.erase(it);
+        return true;
+    }
+    return false;
+}
+
+std::size_t DataFrame::DropEmpty() {
+    std::size_t count_drops = 0;
+    for (auto it = data_.begin(); it != data_.end();) {
+        if (it->second.GetDType() == DType::Empty) {
+            auto jt = it;
+            ++it;
+            data_.erase(jt);
+            ++count_drops;
+        }
+        else {
+            ++it;
+        }
+    }
+    return count_drops;
+}
+
+std::size_t DataFrame::DropNones() {
+    std::size_t count_drops = 0;
+    for (auto it = data_.begin(); it != data_.end();) {
+        if (it->second.GetDType() == DType::None) {
+            auto jt = it;
+            ++it;
+            data_.erase(jt);
+            ++count_drops;
+        }
+        else {
+            ++it;
+        }
+    }
+    return count_drops;
 }
 
 // ========================================
@@ -98,6 +226,7 @@ DataFrame DataFrame::FromStream(std::istream& in) {
         getline(in, data);
         std::istringstream stream(data);
         while (getline(stream, data, ',')) {
+            data = TrimWhiteSpaceToFit(data);
             if (data.empty()) {
                 colNames.push_back("Unnamed:" + std::to_string(numUnnamedColumns));
                 ++numUnnamedColumns;
@@ -110,8 +239,9 @@ DataFrame DataFrame::FromStream(std::istream& in) {
 
     // Set up the column storage.
     StorageType internal;
+    auto index_map = std::make_shared<std::vector<std::size_t>>();
     for (const auto& name : colNames) {
-        internal.emplace_back(name, Column(DType::None));
+        internal.emplace_back(name, Column(DType::None, index_map));
     }
     // Record the assumed dtype of every column. This will be updated as necessary.
     std::vector<DType> dtype_record(colNames.size(), DType::None);
@@ -119,12 +249,13 @@ DataFrame DataFrame::FromStream(std::istream& in) {
     // Get lines as long as possible.
     int numRows = 0;
     while (getline(in, data)) {
-
         std::istringstream stream(data);
 
         auto it = internal.begin();
         auto dt = dtype_record.begin();
         while (getline( stream, data, ',' )) {
+            // Trim whitespaces
+            data = TrimWhiteSpaceToFit(data);
             // If the row has no type yet, or has been empty so far.
             if (*dt == DType::None || *dt == DType::Empty) {
                 auto dtype = CheckDType(data);
@@ -148,13 +279,13 @@ DataFrame DataFrame::FromStream(std::istream& in) {
                 }
                 it->second.box_->wrapper_->AddByString(data);
             }
-
             ++it, ++dt;
         }
+        index_map->push_back(numRows);
         ++numRows;
     }
 
-    return DataFrame(std::move(internal));
+    return DataFrame(std::move(internal), std::move(index_map));
 }
 
 DataFrame DataFrame::ReadCSV(const std::string& filename) {
@@ -216,4 +347,29 @@ DataFrame::StorageType::iterator DataFrame::GetColumn(const std::string& name) {
 DataFrame::StorageType::const_iterator DataFrame::GetColumn(const std::string& name) const {
     return std::find_if(data_.cbegin(), data_.cend(),
                         [&](const auto& pr) { return pr.first == name; });
+}
+
+void DataFrame::UpdateIndexMap(IMapType index_map) {
+    index_map_ = std::move(index_map);
+    for (auto& pr : data_) {
+        pr.second.index_map_ = index_map_;
+    }
+}
+
+std::string DataFrame::TrimWhiteSpaceToFit(const std::string& name) {
+    std::string output;
+    if (name.empty()) {
+        return output;
+    }
+    std::size_t i = 0;
+    // Pass initial whitespaces.
+    for (; i < name.size() && isspace(name[i]); ++i);
+    // Copy the rest of the string to the output buffer.
+    std::copy(&name[i], &name[0] + name.size(), std::back_inserter(output));
+    // Remove trailing whitespaces.
+    while (!output.empty() && isspace(output.back())) {
+        output.pop_back();
+    }
+
+    return output;
 }

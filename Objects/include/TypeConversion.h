@@ -8,14 +8,17 @@
 #include "DTypes.h"
 
 inline bool ValidBool(const std::string& data) {
-    return data == "True" || data == "False" || data.empty();
+    return data == "True" || data == "TRUE" || data == "False" || data == "FALSE" || data.empty();
 }
 
 inline char ToBool(const std::string& data) {
-    if (data.empty()) {
-        return -1; // NaN
+    if (data == "True" || data == "TRUE") {
+        return true;
     }
-    return data == "True" ? 1 : 0;
+    if (data == "False" || data == "FALSE") {
+        return false;
+    }
+    return -1;
 }
 
 inline bool ValidInteger(const std::string& data) {
@@ -68,7 +71,7 @@ inline double ToDouble(const std::string& data) {
 }
 
 inline DType CheckDType(const std::string& data) {
-    // This is a NaN value.
+    // This is a NaN value_.
     if (data.empty()) {
         return DType::Empty;
     }
@@ -164,7 +167,7 @@ inline S cast(const T& value) {
 
 template<typename T>
 inline std::string cast(const T& value) {
-    if (IsNaN<T, T>::check(value)) {
+    if (IsNaN<T>::check(value)) {
         return "";
     }
     return std::to_string(value);
@@ -172,10 +175,10 @@ inline std::string cast(const T& value) {
 
 template<>
 inline std::string cast(const bool& value) {
-    if (IsNaN<bool, bool>::check(value)) {
+    if (IsNaN<bool>::check(value)) {
         return "";
     }
-    return value ? "True" : "False";
+    return value ? "TRUE" : "FALSE";
 }
 
 // ============================================

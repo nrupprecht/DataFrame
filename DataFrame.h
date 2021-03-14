@@ -5,7 +5,7 @@
 #ifndef __DATA_FRAME_CONSOLIDATION_H__
 #define __DATA_FRAME_CONSOLIDATION_H__
 
-#include "Objects/Column.h"
-#include "Objects/Concrete.h"
+#include "Objects/include/templates/Column.h"
+#include "Objects/include/Concrete.h"
 
 #endif //__DATA_FRAME_CONSOLIDATION_H__
