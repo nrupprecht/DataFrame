@@ -100,6 +100,7 @@ Indicator operator==(const Column& col, const std::string& rhs) {
 }
 
 Indicator operator<(const Column& colA, const Column& colB) {
+    // \TODO: Work with index map.
     return colA.box_->wrapper_->cmp_less(colB.box_->wrapper_);
 }
 
@@ -156,11 +157,19 @@ bool Column::IsFullColumn() const {
 }
 
 std::size_t Column::Size() const {
-    return index_map_->size();
+    if (index_map_) {
+        return index_map_->size();
+    } else {
+        return box_->wrapper_->Size();
+    }
 }
 
 bool Column::Empty() const {
-    return index_map_->empty();
+    if (index_map_) {
+        return index_map_->empty();
+    } else {
+        return box_->wrapper_->Empty();
+    }
 }
 
 DType Column::GetDType() const {
@@ -168,7 +177,11 @@ DType Column::GetDType() const {
 }
 
 void Column::ToStream(std::size_t index, std::ostream& out) const {
-    box_->wrapper_->ToStream((*index_map_)[index], out);
+    if (index_map_) {
+        box_->wrapper_->ToStream((*index_map_)[index], out);
+    } else {
+        box_->wrapper_->ToStream(index, out);
+    }
 }
 
 DataFrame::Column::Column(DType dtype, IMapType index_map, std::size_t size)
@@ -203,4 +216,8 @@ DataFrame::Column::Column(DType dtype, IMapType index_map, std::size_t size)
 bool Column::Append(const Column& col) {
     // Note: This function does not update the index map, DataFrame will take care of that.
     return box_->wrapper_->Append(col.box_->wrapper_);
+}
+
+std::size_t Column::FullSize() const {
+    return box_->wrapper_->Size();
 }

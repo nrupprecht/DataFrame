@@ -102,57 +102,57 @@ struct DataFrame::Column::ConcreteWrapper : public DataFrame::Column::Wrapper {
 
     Indicator lt(double value, const IMapType& index_map) const override {
         return DoComparison<double, T>::compare(
-                [] (auto d, auto v) { return d < v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d < v; }, data_, index_map, value);
     }
 
     Indicator gt(double value, const IMapType& index_map) const override {
         return DoComparison<double, T>::compare(
-                [] (auto d, auto v) { return d > v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d > v; }, data_, index_map, value);
     }
 
     Indicator le(double value, const IMapType& index_map) const override {
         return DoComparison<double, T>::compare(
-                [] (auto d, auto v) { return d <= v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d <= v; }, data_, index_map, value);
     }
 
     Indicator ge(double value, const IMapType& index_map) const override {
         return DoComparison<double, T>::compare(
-                [] (auto d, auto v) { return d >= v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d >= v; }, data_, index_map, value);
     }
 
     Indicator eq(double value, const IMapType& index_map) const override {
         return DoComparison<double, T>::compare(
-                [] (auto d, auto v) { return d == v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d == v; }, data_, index_map, value);
     }
 
     Indicator lt(int value, const IMapType& index_map) const override {
         return DoComparison<int, T>::compare(
-                [] (auto d, auto v) { return d < v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d < v; }, data_, index_map, value);
     }
 
     Indicator gt(int value, const IMapType& index_map) const override {
         return DoComparison<int, T>::compare(
-                [] (auto d, auto v) { return d > v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d > v; }, data_, index_map, value);
     }
 
     Indicator le(int value, const IMapType& index_map) const override {
         return DoComparison<int, T>::compare(
-                [] (auto d, auto v) { return d <= v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d <= v; }, data_, index_map, value);
     }
 
     Indicator ge(int value, const IMapType& index_map) const override {
         return DoComparison<int, T>::compare(
-                [] (auto d, auto v) { return d >= v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d >= v; }, data_, index_map, value);
     }
 
     Indicator eq(int value, const IMapType& index_map) const override {
         return DoComparison<int, T>::compare(
-                [] (auto d, auto v) { return d == v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d == v; }, data_, index_map, value);
     }
 
     Indicator eq(std::string value, const IMapType& index_map) const override {
         return DoComparison<std::string, T>::compare(
-                [] (auto d, auto v) { return d == v; }, data_, *index_map, value);
+                [] (auto d, auto v) { return d == v; }, data_, index_map, value);
     }
 
     // ========================================
@@ -160,8 +160,15 @@ struct DataFrame::Column::ConcreteWrapper : public DataFrame::Column::Wrapper {
     // ========================================
 
     void SetAll(const T& value, const IMapType& index_map) {
-        for (std::size_t index : *index_map) {
-            data_[index] = value;
+        if (index_map) {
+            for (std::size_t index : *index_map) {
+                data_[index] = value;
+            }
+        }
+        else {
+            for (auto& entry : data_.data_) {
+                entry.value_ = value;
+            }
         }
     }
 

@@ -7,6 +7,7 @@
 
 #include <list>
 #include <vector>
+#include <set>
 
 #include "DTypes.h"
 
@@ -31,7 +32,7 @@ public:
     // ========================================
 
     //! \brief Creates an empty DataFrame.
-    DataFrame();
+    DataFrame() = default;
 
     // ========================================
     //  Accessors.
@@ -120,11 +121,13 @@ public:
 
     //! \brief Create a DataFrame from an istream.
     static DataFrame FromStream(std::istream& in);
+
     //! \brief Read a DataFrame from a csv.
     static DataFrame ReadCSV(const std::string& filename);
 
     //! \brief Write a representation of the DataFrame to an ostream.
     bool ToStream(std::ostream& out);
+
     //! \brief Write the DataFrame to a file as a csv.
     bool ToCSV(const std::string& filename);
 
@@ -142,21 +145,23 @@ private:
     // ========================================
 
     //! \brief Private constructor, constructs a data frame from the list of column pairs.
-    explicit DataFrame(StorageType&& data, IMapType&& index_map)
-        : data_(std::move(data)), index_map_(std::move(index_map)) {}
+    explicit DataFrame(StorageType&& data)
+        : data_(std::move(data)) {}
 
     // ========================================
     //  Private helper functions.
     // ========================================
 
+    //! \brief Convenience method to create a new index map.
+    static IMapType MakeIndexMap();
+
+    void AddEntriesToIndexMap(std::size_t num_entries = 1);
+
     //! \brief Get an iterator to a column, by name. Returns data_.end() if column does not exist.
     StorageType::iterator GetColumn(const std::string& name);
 
+    //! \brief Get a constant iterator to a column, by name. Returns data_.end() if column does not exist.
     StorageType::const_iterator GetColumn(const std::string& name) const;
-
-    //! \brief Update the index map. This sets the index_map_ variable, and updates the index maps of
-    //! all columns.
-    void UpdateIndexMap(IMapType index_map);
 
     //! \brief Takes a string returns a string that has had the beginning and ending whitespaces
     //! stripped off. Used on column names when reading CSVs.
@@ -165,14 +170,20 @@ private:
     template<typename ...Args, std::size_t ...Seq>
     bool HelpAppend(std::index_sequence<Seq...>, const Args& ...args) {
         auto tuples = std::make_tuple(std::next(data_.begin(), Seq)...);
+        // Make sure the types all match. This is a requirement of the Append function.
         bool types_match = util::And(std::get<Seq>(tuples)->second.template IsType<ConvenienceType_t<Args>>()...);
         if (!types_match) {
             return false;
         }
+
+        // Since a row will be added, we have to update the index map. We have to take some care since some columns
+        // might have null index maps (because they don't need them), and multiple columns may share the same index map
+        AddEntriesToIndexMap();
+
+        // Add the data to each column.
         util::Null((std::get<Seq>(tuples)->second.template GetConcrete<ConvenienceType_t<Args>>()
                 .push_back(ConvenienceType_t<Args>(args)), true)...);
-        // Since a row has been added, we have to update the index map.
-        index_map_->push_back(NumRowsFull());
+        // The operation succeeded, return true.
         return true;
     }
 
@@ -182,9 +193,6 @@ private:
 
     //! \brief The dataframe's actual data.
     StorageType data_;
-
-    //! \brief The index map for this data frame.
-    IMapType index_map_;
 };
 
 

@@ -83,7 +83,6 @@ public:
 
     void resize(std::size_t sz) { data_.resize(sz); }
 
-private:
     //! \brief Non-specialized dfvector<T>'s are just wrappers for a std::vectors<holder<T>>.
     CType data_;
 };

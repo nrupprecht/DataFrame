@@ -9,7 +9,7 @@ int main() {
     df["More"] = std::vector<double>{21., 18., 4., 17., 15.};
     df["Advanced"] = std::vector<char>{'a', 'c', 'n', 'z', 'e'};
     df["Boolean"] = std::vector<bool>{true, false, false, true, true};
-    df["Test"] = std::vector<std::string>{ "", "", "", "", "" };
+    df["Test"].Set("");
     try {
         std::cout << "Try to add a column of the wrong size. Should fail:\n";
         df["BadSize"] = std::vector<double>{ 3. };
@@ -23,9 +23,22 @@ int main() {
 
     std::cout << "\nPrint DataFrame:\n";
     df.ToStream(std::cout);
-    std::cout << "\nSelect subset of df where Boolean is False, and set Test to \"FFF\n";
-    df[df["Boolean"] == false]["Test"].Set("FFF");
+    std::cout << "\nSelect subset of df where Boolean is False, and set Test to \"FFF\".\n";
+    std::cout << "Then, select subsets and add columns to them, showing that adding columns to"
+                 "\nanother DataFrame doesn't add columns to the original data frame.\n\n";
+    auto view = df[df["Boolean"] == false];
+    view["Test"].Set("FFF");
+    view["NewAddition"].Set(1);
+    auto small_view = view[view["More"] == 4];
+    auto small_view_2 = small_view;
+    small_view["OneMore"].Set("K");
     df.ToStream(std::cout);
+    std::cout << "------\n";
+    view.ToStream(std::cout);
+    std::cout << "------\n";
+    small_view.ToStream(std::cout);
+    std::cout << "------\n";
+    small_view_2.ToStream(std::cout);
 
     auto save1 = df["Basic"];
     auto save2 = df["Basic"];

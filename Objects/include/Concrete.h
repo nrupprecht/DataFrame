@@ -32,11 +32,23 @@ public:
 
     //! \brief Return the size of the concrete column. Because of masking, this may be less than the size
     //! of the data vector.
-    std::size_t Size() const { return index_map_->size(); }
+    std::size_t Size() const {
+        if (index_map_) {
+            return index_map_->size();
+        } else {
+            return wrapper_->data_.size();
+        }
+    }
 
     //! \brief Return whether the concrete column is empty. Because of masking, this may be true even when the
     //! data vector is not empty.
-    bool Empty() const { return index_map_->empty(); }
+    bool Empty() const {
+        if (index_map_) {
+            return index_map_->empty();
+        } else {
+            return wrapper_->data_.empty();
+        }
+    }
 
     //! \brief Get the dtype of the data.
     DType GetDType() const { return wrapper_->GetDType(); }
@@ -47,12 +59,20 @@ public:
 
     //! \brief Reference access.
     T& operator[](std::size_t index) {
-        return wrapper_->data_[(*index_map_)[index]];
+        if (index_map_) {
+            return wrapper_->data_[(*index_map_)[index]];
+        } else { // A null index map means we don't need an index map.
+            return wrapper_->data_[index];
+        }
     }
 
     //! \brief Constant access.
     const T& operator[](std::size_t index) const {
-        return wrapper_->data_[(*index_map_)[index]];
+        if (index_map_) {
+            return wrapper_->data_[(*index_map_)[index]];
+        } else { // A null index map means we don't need an index map.
+            return wrapper_->data_[index];
+        }
     }
 
     //! \brief Get a set of all the unique values in the concrete column.
@@ -81,6 +101,18 @@ private:
     //! \brief Private method to add data to the concrete column. Only a DataFrame can add data to columns.
     void push_back(const T& value) {
         wrapper_->data_.push_back(value);
+    }
+
+    //! \brief Return the full size of underlying column the concrete points to. If this concrete was selected as a
+    //! subsets of a data frame, the size and full size will differ.
+    std::size_t FullSize() const {
+        return wrapper_->data_.size();
+    }
+
+    //! \brief Return the index map and the next index that should be inserted into the index map (if an index map
+    //! is needed).
+    std::pair<std::vector<std::size_t>*, std::size_t> GetIndexData() const {
+        return std::make_pair(index_map_.get(), FullSize());
     }
 
     //! \brief A pointer to the concrete wrapper that contains the data.

@@ -10,7 +10,7 @@
 #include "dfvector.h"
 
 using Indicator = std::vector<bool>;
-using IMap = std::vector<std::size_t>;
+using IMapType = std::shared_ptr<std::vector<std::size_t>>;
 
 // ========================================
 //  Type trait for checking whether one type can be static casted to another.
@@ -40,7 +40,7 @@ namespace {
         static Indicator compare(
                 Binary &&op,
                 const dfvector<target_type> &data,
-                const IMap &index_map,
+                const IMapType& index_map,
                 const value_type &value) {
             return {};
         }
@@ -52,12 +52,20 @@ namespace {
         static Indicator compare(
                 Binary &&op,
                 const dfvector<target_type> &data,
-                const IMap &index_map,
+                const IMapType& index_map,
                 const value_type &value) {
             Indicator output;
-            output.reserve(index_map.size());
-            for (auto i : index_map) {
-                output.push_back(op(data[i], static_cast<target_type>(value)));
+            if (index_map) { // Index map: use only entries in the index map.
+                output.reserve(index_map->size());
+                for (auto i : *index_map) {
+                    output.push_back(op(data[i], static_cast<target_type>(value)));
+                }
+            }
+            else { // No index map, use all data entries.
+                output.reserve(data.size());
+                for (std::size_t i = 0; i < data.size(); ++i) {
+                    output.push_back(op(data[i], static_cast<target_type>(value)));
+                }
             }
             return output;
         }

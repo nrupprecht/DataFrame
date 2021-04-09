@@ -20,7 +20,7 @@
 
 //! \brief A column is like a type-erased vector, though with a number of important differences.
 //!
-//! A column (or a concrete column, or "Concrete") does not have a push_back or equivalent function.
+//! A column (or a concrete column, i.e. a "Concrete") does not have a push_back or equivalent function.
 //! Since each column in a data frame needs to have the same number of entries, data can only be added via a dataframe.
 //! Elements of a Column cannot be accessed directly (right now) since the underlying type of the column is opaque.
 //! Instead, a Concrete should be gotten from the column. Elements of the Concrete can be accessed and modified.
@@ -150,7 +150,7 @@ private:
     //  Private constructors.
     // ========================================
     //! \brief Private constructor for a column of a specific dtype and size.
-    Column(DType dtype, IMapType index_map, std::size_t size = 0);
+    Column(DType dtype, IMapType index_map = nullptr, std::size_t size = 0);
 
     // ========================================
     //  Private helper functions.
@@ -160,6 +160,10 @@ private:
     //! a DataFrame can use it.
     bool Append(const Column& col);
 
+    //! \brief Return the full size of underlying column the concrete points to. If this concrete was selected as a
+    //! subsets of a data frame, the size and full size will differ.
+    std::size_t FullSize() const;
+
     // ========================================
     //  Private member data.
     // ========================================
@@ -167,7 +171,7 @@ private:
     //! \brief The box for this column.
     std::shared_ptr<Box> box_;
 
-    //! \brief The index map.
+    //! \brief The index map for this column.
     IMapType index_map_;
 };
 
@@ -225,7 +229,7 @@ DataFrame::Column& DataFrame::Column::operator=(const std::vector<T>& rhs) {
     ptr->data_.resize(rhs.size());
     for (std::size_t i = 0; i < rhs.size(); ++i) {
         ptr->data_[i] = rhs[i];
-        if (setting_none_col) {
+        if (setting_none_col && index_map_) {
             index_map_->push_back(index_map_->size());
         }
     }
