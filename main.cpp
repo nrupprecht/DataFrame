@@ -1,12 +1,12 @@
 #include <iostream>
 
 #include "DataFrame.h"
-
+using namespace dataframe;
 
 int main() {
     DataFrame df;
     df["Basic"] = std::vector<double>{1., 2., 3., 4., 5.};
-    df["More"] = std::vector<double>{21., 18., 4., 17., 15.};
+    df["More"] = std::vector<double>{21., 18., 4., 17., 0.};
     df["Advanced"] = std::vector<char>{'a', 'c', 'n', 'z', 'e'};
     df["Boolean"] = std::vector<bool>{true, false, false, true, true};
     df["Test"].Set("");
@@ -84,5 +84,23 @@ int main() {
     std::cout << "\nProperties with three bedrooms that are condos:\n";
     df_zero.ToStream(std::cout);
 
+    // You can cast a column to a vector of a specified type. The vector will be empty if the conversion failed.
+    auto data_float = df["More"].CastToVector<float>();
+    auto data_int = df["More"].CastToVector<int>();
+    auto data_bool = df["More"].CastToVector<bool>();
+    auto data_string = df["More"].CastToVector<std::string>();
+    auto data_char = df["More"].CastToVector<char>();
+    auto data_long = df["More"].CastToVector<long>();
+    auto data_double = df["More"].CastToVector<double>();
+
+    // If you append a dataframe to an empty dataframe, the first dataframe should just become the appended
+    // dataframe.
+    DataFrame starting_df;
+    starting_df.Append(df);
+    starting_df.Append(df);
+
+    auto more = starting_df["More"].GetConcrete<double>();
+    auto more_vec = starting_df["More"].CastToVector<int>();
+    auto x = more[4];
     return 0;
 }

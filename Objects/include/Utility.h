@@ -11,7 +11,7 @@ namespace util {
 
     // Thanks, https://stackoverflow.com/questions/22758291/how-can-i-detect-if-a-type-can-be-streamed-to-an-stdostream
 
-    namespace {
+    namespace detail {
         template<typename S, typename T>
         static auto test(int) -> decltype(std::declval<S &>() << std::declval<T>(), std::true_type());
 
@@ -21,7 +21,7 @@ namespace util {
 
     template<typename S, typename T>
     struct is_streamable {
-        static const bool value = decltype(test<S, T>(0))::value;
+        static const bool value = decltype(detail::test<S, T>(0))::value;
     };
 
     template<typename T>

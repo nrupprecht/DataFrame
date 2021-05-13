@@ -10,107 +10,113 @@
 #include <list>
 #include <map>
 
-// ========================================
-//  Type identification
-// ========================================
+#include "Utility.h"
 
-template<typename T>
-struct TypeDetails {
-    const std::string description = "Unknown";
-};
+namespace dataframe {
+namespace types {
+    // ========================================
+    //  Type identification
+    // ========================================
 
-// ========================================
-//  Basic types.
-// ========================================
+    template<typename T>
+    struct TypeDetails {
+        const std::string description = "Unknown";
+    };
 
-template<>
-struct TypeDetails<float> {
-    const std::string description = "float";
-};
+    // ========================================
+    //  Basic types.
+    // ========================================
 
-template<>
-struct TypeDetails<double> {
-    const std::string description = "double";
-};
+    template<>
+    struct TypeDetails<float> {
+        const std::string description = "float";
+    };
 
-template<>
-struct TypeDetails<int> {
-    const std::string description = "int";
-};
+    template<>
+    struct TypeDetails<double> {
+        const std::string description = "double";
+    };
 
-template<>
-struct TypeDetails<std::string> {
-    const std::string description = "std::string";
-};
+    template<>
+    struct TypeDetails<int> {
+        const std::string description = "int";
+    };
 
-template<>
-struct TypeDetails<bool> {
-    const std::string description = "bool";
-};
+    template<>
+    struct TypeDetails<std::string> {
+        const std::string description = "std::string";
+    };
 
-// ========================================
-//  Pointers, references, cv
-// ========================================
+    template<>
+    struct TypeDetails<bool> {
+        const std::string description = "bool";
+    };
 
-template<typename T>
-struct TypeDetails<T*> {
-    const std::string description = TypeDetails<T>().description + "*";
-};
+    // ========================================
+    //  Pointers, references, cv
+    // ========================================
 
-template<typename T>
-struct TypeDetails<T&> {
-    const std::string description = TypeDetails<T>().description + "&";
-};
+    template<typename T>
+    struct TypeDetails<T *> {
+        const std::string description = TypeDetails<T>().description + "*";
+    };
 
-template<typename T>
-struct TypeDetails<const T> {
-    const std::string description = TypeDetails<T>().description + " const";
-};
+    template<typename T>
+    struct TypeDetails<T &> {
+        const std::string description = TypeDetails<T>().description + "&";
+    };
 
-template<typename T>
-struct TypeDetails<volatile T> {
-    const std::string description = TypeDetails<T>().description + " volatile";
-};
+    template<typename T>
+    struct TypeDetails<const T> {
+        const std::string description = TypeDetails<T>().description + " const";
+    };
 
-template<typename T>
-struct TypeDetails<const volatile T> {
-    const std::string description = TypeDetails<T>().description + " const volatile";
-};
+    template<typename T>
+    struct TypeDetails<volatile T> {
+        const std::string description = TypeDetails<T>().description + " volatile";
+    };
 
-// ========================================
-//  Function pointers
-// ========================================
+    template<typename T>
+    struct TypeDetails<const volatile T> {
+        const std::string description = TypeDetails<T>().description + " const volatile";
+    };
 
-template<typename R, typename ...Args>
-struct TypeDetails<R (*)(Args...)> {
-    const std::string description = TypeDetails<R>().description
-            + "(*)(" + util::str_cat(TypeDetails<Args>().description...) + ")" ;
-};
+    // ========================================
+    //  Function pointers
+    // ========================================
 
-// ========================================
-//  Containers
-// ========================================
+    template<typename R, typename ...Args>
+    struct TypeDetails<R (*)(Args...)> {
+        const std::string description = TypeDetails<R>().description
+                                        + "(*)(" + util::str_cat(TypeDetails<Args>().description...) + ")";
+    };
 
-template<typename T>
-struct TypeDetails<std::vector<T>> {
-    const std::string description = "std::vector<" + TypeDetails<T>().description + ">";
-};
+    // ========================================
+    //  Containers
+    // ========================================
 
-template<typename T>
-struct TypeDetails<std::list<T>> {
-    const std::string description = "std::list<" + TypeDetails<T>().description + ">";
-};
+    template<typename T>
+    struct TypeDetails<std::vector<T>> {
+        const std::string description = "std::vector<" + TypeDetails<T>().description + ">";
+    };
 
-template<typename S, typename T>
-struct TypeDetails<std::map<S, T>> {
-    const std::string description = "std::map<"
-            + TypeDetails<S>().description + "," + TypeDetails<T>().description + ">";
-};
+    template<typename T>
+    struct TypeDetails<std::list<T>> {
+        const std::string description = "std::list<" + TypeDetails<T>().description + ">";
+    };
 
-template<typename S, typename T>
-struct TypeDetails<std::pair<S, T>> {
-    const std::string description = "std::pair<"
-            + TypeDetails<S>().description + "," + TypeDetails<T>().description + ">";
-};
+    template<typename S, typename T>
+    struct TypeDetails<std::map<S, T>> {
+        const std::string description = "std::map<"
+                                        + TypeDetails<S>().description + "," + TypeDetails<T>().description + ">";
+    };
 
+    template<typename S, typename T>
+    struct TypeDetails<std::pair<S, T>> {
+        const std::string description = "std::pair<"
+                                        + TypeDetails<S>().description + "," + TypeDetails<T>().description + ">";
+    };
+
+}
+}
 #endif // __TYPE_DESCRIPTIONS_H__

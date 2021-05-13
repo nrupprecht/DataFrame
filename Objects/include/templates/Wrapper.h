@@ -5,6 +5,8 @@
 #ifndef __WRAPPER_TEMPLATES_H__
 #define __WRAPPER_TEMPLATES_H__
 
+// This file is INCLUDED in Column.h
+
 //! \brief A base class for child classes with concrete storage type.
 struct DataFrame::Column::Wrapper {
     //! \brief Returns the size of the data held by the wrapper.
@@ -22,6 +24,9 @@ struct DataFrame::Column::Wrapper {
 
     //! \brief Return a copy of the wrapper.
     virtual std::shared_ptr<Wrapper> Clone() const = 0;
+
+    //! \brief Return a copy of the wrapper, only keeping the data indicated by the index_map.
+    virtual std::shared_ptr<Wrapper> Clone(const IMapType& index_map) const = 0;
 
     //! \brief Write the index-th element of the wrapper to an ostream.
     virtual void ToStream(std::size_t index, std::ostream& out) const = 0;
@@ -57,6 +62,19 @@ struct DataFrame::Column::Wrapper {
     virtual Indicator eq(int value, const IMapType& index_map) const = 0;
 
     virtual Indicator eq(std::string value, const IMapType& index_map) const = 0;
+
+    // ========================================
+    //  Casting.
+    // ========================================
+
+    virtual std::vector<int> castToInt() = 0;
+    virtual std::vector<char> castToChar() = 0;
+    virtual std::vector<long> castToLong() = 0;
+    virtual std::vector<unsigned int> castToUInt() = 0;
+    virtual std::vector<bool> castToBool() = 0;
+    virtual std::vector<float> castToFloat() = 0;
+    virtual std::vector<double> castToDouble() = 0;
+    virtual std::vector<std::string> castToString() = 0;
 
     // ========================================
     //  Data.

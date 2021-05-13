@@ -5,6 +5,7 @@
 #ifndef __CONCRETE_WRAPPER_TEMPLATES_H__
 #define __CONCRETE_WRAPPER_TEMPLATES_H__
 
+// This file is INCLUDED in Column.h
 
 template<typename T>
 struct DataFrame::Column::ConcreteWrapper : public DataFrame::Column::Wrapper {
@@ -43,6 +44,16 @@ struct DataFrame::Column::ConcreteWrapper : public DataFrame::Column::Wrapper {
 
     std::shared_ptr<Wrapper> Clone() const override {
         auto ptr = std::make_shared<ConcreteWrapper<T>>();
+        ptr->data_ = data_;
+        return ptr;
+    }
+
+    std::shared_ptr<Wrapper> Clone(const IMapType& index_map) const override {
+        auto ptr = std::make_shared<ConcreteWrapper<T>>();
+        ptr->data_.Reserve(index_map->size());
+        for (std::size_t i = 0; i < index_map->size(); ++i) {
+            ptr->data_.push_back(data_[(*index_map)[i]]);
+        }
         ptr->data_ = data_;
         return ptr;
     }
@@ -156,6 +167,70 @@ struct DataFrame::Column::ConcreteWrapper : public DataFrame::Column::Wrapper {
     }
 
     // ========================================
+    //  Casting.
+    // ========================================
+
+    std::vector<int> castToInt() override {
+        return castVector<int>();
+    }
+
+    std::vector<char> castToChar() override {
+        return castVector<char>();
+    }
+
+    std::vector<long> castToLong() override {
+        return castVector<long>();
+    }
+
+    std::vector<unsigned int> castToUInt() override {
+        return castVector<unsigned int>();
+    }
+
+    std::vector<bool> castToBool() override {
+        return castVector<bool>();
+    }
+
+    std::vector<float> castToFloat() override {
+        return castVector<float>();
+    }
+
+    std::vector<double> castToDouble() override {
+        return castVector<double>();
+    }
+
+    std::vector<std::string> castToString() override {
+        return castVector<std::string>();
+    }
+
+    template<typename Type, typename Target, bool can_cast>
+    struct Caster {
+        static std::vector<Target> castVector(const DFVector<Type>& data) {
+            std::vector<Target> output;
+            output.reserve(data.size());
+            for (const auto& holder : data.data_) {
+                output.push_back(static_cast<Target>(holder.value_));
+            }
+            return output;
+        }
+    };
+
+    template<typename Type, typename Target>
+    struct Caster<Type, Target, false> {
+        static std::vector<Target> castVector(const DFVector<Type>& data) {
+            return {};
+        }
+    };
+
+    template<typename Target>
+    std::vector<Target> castVector() {
+        if (data_.empty()) {
+            return {};
+        } else {
+            return Caster<value_type, Target, is_castable<value_type, Target>::value>::castVector(data_);
+        }
+    }
+
+    // ========================================
     //  Other functions.
     // ========================================
 
@@ -176,7 +251,7 @@ struct DataFrame::Column::ConcreteWrapper : public DataFrame::Column::Wrapper {
     //  Data
     // ========================================
 
-    dfvector<value_type> data_;
+    DFVector<value_type> data_;
 };
 
 #endif // __CONCRETE_WRAPPER_TEMPLATES_H__

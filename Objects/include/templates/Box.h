@@ -5,13 +5,18 @@
 #ifndef __BOX_TEMPLATES_H__
 #define __BOX_TEMPLATES_H__
 
+// This file is INCLUDED in Column.h
 
 struct DataFrame::Column::Box {
-    explicit Box(std::shared_ptr<Wrapper>&& wrapper) : wrapper_(wrapper) {}
+    explicit Box(std::shared_ptr<Wrapper>&& wrapper) : wrapper_(std::move(wrapper)) {}
 
     template<typename T>
     static std::shared_ptr<Box> MakeBox(std::size_t size) {
         return std::make_shared<Box>(std::make_shared<ConcreteWrapper<T>>(size));
+    }
+
+    Box Clone() {
+        return Box(wrapper_->Clone());
     }
 
     void SetWrapper(std::shared_ptr<Wrapper>&& ptr) {

@@ -7,10 +7,12 @@
 #include <fstream>
 #include <sstream>
 #include "../include/TypeConversion.h"
-#include "../include/templates/Column.h"
+#include "../include/Column.h"
 
 #include <iostream>
 #include <utility>
+
+using namespace dataframe;
 
 bool DataFrame::HasColumn(const std::string& name) {
     return GetColumn(name) != data_.end();
@@ -149,6 +151,9 @@ DataFrame DataFrame::Ref() const {
 
 DataFrame DataFrame::Clone() const {
     auto df = DataFrame();
+    for (const auto& col : data_) {
+        df[col.first] = col.second.Clone();
+    }
     // \TODO: Actual cloning part.
     return df;
 }
@@ -163,6 +168,13 @@ void DataFrame::Append(const DataFrame& df) {
     if (df.NumCols() < NumCols()) {
         return;
     }
+    // If this column is empty, set this dataframe to be a copy (non-reference) of the
+    // appended dataframe
+    if (Empty()) {
+        *this = df.Clone();
+        return;
+    }
+    // Figure out which columns should be appended.
     std::vector<StorageType::const_iterator> iters;
     for (const auto& col : data_) {
         auto& name = col.first;
@@ -170,11 +182,11 @@ void DataFrame::Append(const DataFrame& df) {
         if (!col.second.SameTypeAs(it->second)) {
             std::cout << "Types do not match for column " << col.first << ". DTypes are " \
                 << col.second.GetDType() << " and " << it->second.GetDType() << "\n";
-            return;
+            return; // TODO: Error handling.
         }
         if (it == df.data_.end()) {
             std::cout << "Did not find column " << col.first << " in DF.\n";
-            return;
+            return; // TODO: Error handling.
         }
         iters.push_back(it);
     }
